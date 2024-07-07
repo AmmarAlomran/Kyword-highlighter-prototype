@@ -31,31 +31,24 @@ function elementReady(getter, opts = {}) {
             () => returnMultipleElements ? document.querySelectorAll(getter[0]) : document.querySelector(getter)
         ;
         const computeResolveValue = function (mutationRecords) {
-            // see if it already exists
             const ret = _getter(mutationRecords || {});
             if (ret && (!returnMultipleElements || ret.length)) {
                 resolve(ret);
                 clearTimeout(_timeout);
-
-
                 return true;
             }
         };
-
 
         if (computeResolveValue(_getter())) {
             return;
         }
 
-
-        if (opts.timeout)
+        if (opts.timeout) {
             _timeout = setTimeout(() => {
                 const error = new Error(`elementReady(${getter}) timed out at ${opts.timeout}ms`);
                 reject(error);
             }, opts.timeout);
-
-
-
+        }
 
         new MutationObserver((mutationRecords, observer) => {
             const completed = computeResolveValue(_getter(mutationRecords));
@@ -68,13 +61,14 @@ function elementReady(getter, opts = {}) {
         });
     });
 }
+
 function extractKeywordsFromAPI(text) {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
             { action: 'extractKeywords', text: text },
             response => {
                 if (response && response.keywords) {
-                    console.log('Extracted keywords:', response.keywords); // Log keywords for debugging
+                    console.log('Extracted keywords:', response.keywords);
                     resolve(response.keywords);
                 } else {
                     console.error('Keyword extraction failed:', response);
@@ -92,6 +86,46 @@ function highlightKeywords(keywords) {
     });
 }
 
+function fetchExplanationFromAPI(keyword) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+            { action: 'fetchExplanation', keyword: keyword },
+            response => {
+                if (response && response.explanation) {
+                    resolve(response.explanation);
+                } else {
+                    console.error('Explanation fetch failed:', response);
+                    reject('Failed to fetch explanation');
+                }
+            }
+        );
+    });
+}
+
+function showTooltip(text, x, y) {
+    let tooltip = document.getElementById('tooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'tooltip';
+        tooltip.style.position = 'absolute';
+        tooltip.style.backgroundColor = 'white';
+        tooltip.style.border = '1px solid black';
+        tooltip.style.padding = '5px';
+        tooltip.style.zIndex = 1000;
+        document.body.appendChild(tooltip);
+    }
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+    tooltip.innerText = text;
+    tooltip.style.display = 'block';
+}
+
+function hideTooltip() {
+    const tooltip = document.getElementById('tooltip');
+    if (tooltip) {
+        tooltip.style.display = 'none';
+    }
+}
 
 elementReady('body').then(function (body) {
     const text = document.body.innerText;
@@ -99,4 +133,16 @@ elementReady('body').then(function (body) {
     extractKeywordsFromAPI(text).then(keywords => {
         highlightKeywords(keywords);
     }).catch(error => console.error('Error:', error));
-})
+});
+
+document.addEventListener('mouseup', async (event) => {
+    const selectedText = window.getSelection().toString().trim();
+    if (selectedText) {
+        const explanation = await fetchExplanationFromAPI(selectedText);
+        showTooltip(explanation, event.pageX, event.pageY);
+    }
+});
+
+document.addEventListener('mousedown', () => {
+    hideTooltip();
+});
