@@ -92,13 +92,6 @@ function highlightKeywords(keywords) {
     });
 }
 
-// document.addEventListener('DOMContentLoaded', () => {
-//     const text = document.body.innerText;
-//     console.log('Extracting keywords from:', text); 
-//     extractKeywordsFromAPI(text).then(keywords => {
-//         highlightKeywords(keywords);
-//     }).catch(error => console.error('Error:', error));
-// });
 
 elementReady('body').then(function (body) {
     const text = document.body.innerText;
