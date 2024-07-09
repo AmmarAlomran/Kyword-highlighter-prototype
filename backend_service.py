@@ -1,6 +1,10 @@
 from flask import Flask, request, jsonify
 from keybert import KeyBERT
+from rake_nltk import Rake
+import yake
 from collections import Counter
+import spacy
+from sklearn.feature_extraction.text import TfidfVectorizer
 from flask_cors import CORS
 import requests
 
@@ -18,27 +22,37 @@ def fetch_wikipedia_summary(keyword):
     except Exception as e:
         return f"Error fetching summary for {keyword}: {str(e)}"
 
-def extract_keywords(text):
-    kw_model = KeyBERT()
-    keywords = kw_model.extract_keywords(text, keyphrase_ngram_range=(1, 2), stop_words='english')
-    keywords = [kw[0] for kw in keywords]
-    
-    # Count the frequency of keywords and ensure uniqueness
-    keyword_counts = Counter(keywords)
-    unique_keywords = [word for word, _ in keyword_counts.most_common()]
+# def extract_keywords(text):
+#     KeyBERT
+#     kw_model = KeyBERT()
+#     keybert_keywords = kw_model.extract_keywords(text, keyphrase_ngram_range=(1, 2), stop_words='english')
+#     keybert_keywords = [kw[0] for kw in keybert_keywords] 
 
-    return unique_keywords
+
+nlp = spacy.load('en_core_web_sm')
+
+def identify_terms(text):
+    doc = nlp(text)
+    terms = []
+    
+    # Using Named Entity Recognition (NER)
+    for ent in doc.ents:
+        terms.append(ent.text)
+    
+    # Using Part-of-Speech (POS) tagging and Dependency Parsing
+    for token in doc:
+        if token.pos_ in ['PROPN', 'NOUN']:  # Proper nouns and nouns
+            terms.append(token.text)
+    
+    return terms    
 
 @app.route('/extract_keywords', methods=['POST'])
 def extract_keywords_route():
     data = request.json
     text = data.get('text', '')
     if text:
-        try:
-            keywords = extract_keywords(text)
-            return jsonify({'keywords': keywords})
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        keywords = identify_terms(text)
+        return jsonify({'keywords': keywords})
     else:
         return jsonify({'error': 'No text provided'}), 400
 
@@ -47,11 +61,8 @@ def get_explanation_route():
     data = request.json
     keyword = data.get('keyword', '')
     if keyword:
-        try:
-            explanation = fetch_wikipedia_summary(keyword)
-            return jsonify({'explanation': explanation})
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        explanation = fetch_wikipedia_summary(keyword)
+        return jsonify({'explanation': explanation})
     else:
         return jsonify({'error': 'No keyword provided'}), 400
 
