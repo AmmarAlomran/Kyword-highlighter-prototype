@@ -64,26 +64,37 @@ function extractKeywordsFromAPI(text) {
         );
     });
 }
-function highlightKeywords(keywords, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
+function highlightKeywords(keywords) {
     const pattern = keywords.map(keyword => escapeRegExp(keyword.trim())).join('|');
     const regex = new RegExp(`(${pattern})`, 'gi');
 
+    function shouldHighlight(node) {
+        // Check if the node or its ancestors have any of these classes or tags
+        const excludeClasses = ['CodeHighlight', 'code', 'pre'];
+        const excludeTags = ['SCRIPT', 'STYLE', 'PRE', 'CODE', 'BUTTON', 'INPUT', 'TEXTAREA'];
+        
+        let current = node;
+        while (current && current !== document.body) {
+            if (excludeTags.includes(current.nodeName)) return false;
+            if (current.classList && excludeClasses.some(cls => current.classList.contains(cls))) return false;
+            current = current.parentElement;
+        }
+        return true;
+    }
+
     function traverseNode(node) {
         if (node.nodeType === Node.TEXT_NODE) {
-            if (node.textContent.match(regex)) {
+            if (shouldHighlight(node) && node.textContent.match(regex)) {
                 const span = document.createElement('span');
                 span.innerHTML = node.textContent.replace(regex, match => `<span class="highlight">${match}</span>`);
                 node.parentNode.replaceChild(span, node);
             }
-        } else if (node.nodeType === Node.ELEMENT_NODE && !['SCRIPT', 'STYLE', 'PRE', 'CODE'].includes(node.nodeName)) {
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
             Array.from(node.childNodes).forEach(traverseNode);
         }
     }
 
-    traverseNode(container);
+    traverseNode(getMainContent());
 }
 
 function escapeRegExp(string) {
@@ -137,11 +148,33 @@ function hideTooltip() {
     }
 }
 
+function getMainContent() {
+    // Adjust these selectors to match your page structure
+    const contentSelectors = [
+        '.main-content',
+        'article',
+        '.post-content',
+        '#content'
+    ];
+    
+    for (let selector of contentSelectors) {
+        const element = document.querySelector(selector);
+        if (element) {
+            console.log('Found content container:', selector);
+            return element;
+        }
+    }
+    
+    console.log('No specific content container found, using body');
+    return document.body;
+}
+
 elementReady('body').then(function (body) {
-    const text = document.body.innerText;
+    const contentElement = getMainContent();
+    text = contentElement.innerText;
     console.log('Extracting keywords from:', text); 
     extractKeywordsFromAPI(text).then(keywords => {
-        highlightKeywords(keywords);
+        highlightKeywords(keywords, contentElement);
     }).catch(error => console.error('Error:', error));
 });
 
