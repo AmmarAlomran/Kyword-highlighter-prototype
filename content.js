@@ -64,8 +64,10 @@ function extractKeywordsFromAPI(text) {
         );
     });
 }
+
+
 function highlightKeywords(keywords) {
-    const pattern = keywords.map(keyword => escapeRegExp(keyword.trim())).join('|');
+    const pattern = keywords.map(keyword => `\\b${escapeRegExp(keyword.trim())}\\b`).join('|');
     const regex = new RegExp(`(${pattern})`, 'gi');
 
     function shouldHighlight(node) {
@@ -100,6 +102,7 @@ function highlightKeywords(keywords) {
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
 
 async function fetchExplanation(keyword) {
     try {
