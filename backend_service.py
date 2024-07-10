@@ -1,10 +1,7 @@
 from flask import Flask, request, jsonify
 from keybert import KeyBERT
-from rake_nltk import Rake
-import yake
-from collections import Counter
+from transformers import pipeline
 import spacy
-from sklearn.feature_extraction.text import TfidfVectorizer
 from flask_cors import CORS
 import requests
 
@@ -22,65 +19,34 @@ def fetch_wikipedia_summary(keyword):
     except Exception as e:
         return f"Error fetching summary for {keyword}: {str(e)}"
 
-# def extract_keywords(text):
-#     KeyBERT
-#     kw_model = KeyBERT()
-#     keybert_keywords = kw_model.extract_keywords(text, keyphrase_ngram_range=(1, 2), stop_words='english')
-#     keybert_keywords = [kw[0] for kw in keybert_keywords] 
 
 
-nlp = spacy.load('en_core_web_sm')
-
-# Initialize KeyBERT
-kw_model = KeyBERT()
-
-# # Custom function to identify terms
-# def identify_terms(text):
-#     doc = nlp(text)
-#     terms = set()
-    
-#     # Using Named Entity Recognition (NER)
-#     for ent in doc.ents:
-#         terms.add(ent.text)
-    
-#     # Using Part-of-Speech (POS) tagging and Dependency Parsing
-#     for token in doc:
-#         if token.pos_ in ['PROPN', 'NOUN']:  # Proper nouns and nouns
-#             terms.add(token.text)
-    
-#     # Using KeyBERT for keyword extraction with error handling
-#     # try:
-#     #     keywords = kw_model.extract_keywords(text, keyphrase_ngram_range=(1, 2), stop_words=None)
-#     #     for keyword in keywords:
-#     #         terms.add(keyword[0])
-#     # except Exception as e:
-#     #     print(f"Keyword extraction failed: {e}")
-    
-#     print("Identified Terms:", terms)
-    
-#     return terms
+nlp = spacy.load("en_core_web_sm")  # Using a transformer-based model for better accuracy
+kw_model = KeyBERT('distilbert-base-nli-mean-tokens')
 
 def identify_terms(text):
     doc = nlp(text)
-    terms = []
+    terms = set()
     
     # Using Named Entity Recognition (NER)
     for ent in doc.ents:
-        terms.append(ent.text)
+        terms.add(ent.text)
     
     # Using Part-of-Speech (POS) tagging and Dependency Parsing
     for token in doc:
-        if token.pos_ in ['PROPN', 'NOUN']:  # Proper nouns and nouns
-            terms.append(token.text)
-            
+        if token.pos_ in ['PROPN', 'NOUN'] and not token.is_stop:  # Proper nouns and nouns
+            terms.add(token.text)
+    
+    # Using KeyBERT for keyword extraction
     try:
-        keywords = kw_model.extract_keywords(text, keyphrase_ngram_range=(1, 2), stop_words=None)
+        keywords = kw_model.extract_keywords(text, keyphrase_ngram_range=(1, 2), stop_words='english', top_n=10)
         for keyword in keywords:
-            terms.append(keyword[0])
+            terms.add(keyword[0])
     except Exception as e:
         print(f"Keyword extraction failed: {e}")
     
-    return terms    
+    return list(terms)
+ 
 
 @app.route('/extract_keywords', methods=['POST'])
 def extract_keywords_route():
