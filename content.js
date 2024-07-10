@@ -169,7 +169,7 @@ function getMainContent() {
     }
     
     console.log('No specific content container found, using body');
-    return document.body;
+    return false;
 }
 
 elementReady('body').then(function (body) {
