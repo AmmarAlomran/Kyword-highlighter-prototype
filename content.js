@@ -1,3 +1,17 @@
+/**
+ *
+ * @param {(String|String[]|Function)} getter -
+ *      string: selector to return a single element
+ *      string[]: selector to return multiple elements (only the first selector will be taken)
+ *      function: getter(mutationRecords|{})-> Element[]
+ *          a getter function returning an array of elements (the return value will be directly passed back to the promise)
+ *          the function will be passed the `mutationRecords`
+ * @param {Object} opts
+ * @param {Number=0} opts.timeout - timeout in milliseconds, how long to wait before throwing an error (default is 0, meaning no timeout (infinite))
+ * @param {Element=} opts.target - element to be observed
+ *
+ * @returns {Promise<Element>} the value passed will be a single element matching the selector, or whatever the function returned
+ */
 function elementReady(getter, opts = {}) {
     return new Promise((resolve, reject) => {
         opts = Object.assign({
@@ -22,19 +36,26 @@ function elementReady(getter, opts = {}) {
             if (ret && (!returnMultipleElements || ret.length)) {
                 resolve(ret);
                 clearTimeout(_timeout);
+
+
                 return true;
             }
         };
 
+
         if (computeResolveValue(_getter())) {
             return;
         }
+
 
         if (opts.timeout)
             _timeout = setTimeout(() => {
                 const error = new Error(`elementReady(${getter}) timed out at ${opts.timeout}ms`);
                 reject(error);
             }, opts.timeout);
+
+
+
 
         new MutationObserver((mutationRecords, observer) => {
             const completed = computeResolveValue(_getter(mutationRecords));
@@ -47,7 +68,6 @@ function elementReady(getter, opts = {}) {
         });
     });
 }
-
 function extractKeywordsFromAPI(text) {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
@@ -65,16 +85,15 @@ function extractKeywordsFromAPI(text) {
     });
 }
 
-
 function highlightKeywords(keywords) {
     const pattern = keywords.map(keyword => `\\b${escapeRegExp(keyword.trim())}\\b`).join('|');
     const regex = new RegExp(`(${pattern})`, 'gi');
 
     function shouldHighlight(node) {
         // Check if the node or its ancestors have any of these classes or tags
-        const excludeClasses = ['CodeHighlight', 'code', 'pre'];
-        const excludeTags = ['SCRIPT', 'STYLE', 'PRE', 'CODE', 'BUTTON', 'INPUT', 'TEXTAREA'];
-        
+        const excludeClasses = ['CodeHighlight', 'pre', 'highlight'];
+        const excludeTags = ['SCRIPT', 'STYLE', 'PRE', 'BUTTON', 'INPUT', 'TEXTAREA', 'div'];
+
         let current = node;
         while (current && current !== document.body) {
             if (excludeTags.includes(current.nodeName)) return false;
@@ -102,6 +121,32 @@ function highlightKeywords(keywords) {
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+
+function getMainContent() {
+    const contentSelectors = [
+        '.main-content',
+        'article',
+        '.post-content',
+        '#content'
+    ];
+    
+    for (let selector of contentSelectors) {
+        const element = document.querySelector(selector);
+        if (element) {
+            console.log('Found content container:', selector);
+            return element;
+        }
+    }
+    
+    console.log('No specific content container found, using body');
+    return document.body;
+}
+
 
 
 async function fetchExplanation(keyword) {
@@ -151,34 +196,17 @@ function hideTooltip() {
     }
 }
 
-function getMainContent() {
-    // Adjust these selectors to match your page structure
-    const contentSelectors = [
-        '.main-content',
-        'article',
-        '.post-content',
-        '#content'
-    ];
-    
-    for (let selector of contentSelectors) {
-        const element = document.querySelector(selector);
-        if (element) {
-            console.log('Found content container:', selector);
-            return element;
-        }
-    }
-    
-    console.log('No specific content container found, using body');
-    return false;
-}
-
 elementReady('body').then(function (body) {
     const contentElement = getMainContent();
-    text = contentElement.innerText;
-    console.log('Extracting keywords from:', text); 
-    extractKeywordsFromAPI(text).then(keywords => {
-        highlightKeywords(keywords, contentElement);
-    }).catch(error => console.error('Error:', error));
+    if (contentElement) {
+        const text = contentElement.innerText;
+        console.log('Extracting keywords from:', text); 
+        extractKeywordsFromAPI(text).then(keywords => {
+            highlightKeywords(keywords);
+        }).catch(error => console.error('Error:', error));
+    } else {
+        console.log('No content element found.');
+    }
 });
 
 document.addEventListener('mouseup', async (event) => {
