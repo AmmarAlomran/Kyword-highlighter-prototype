@@ -1,12 +1,18 @@
 .highlighted {
-    background-color: rgb(255, 255, 0);
+    background-color: rgba(0, 204, 255, 0.212);
     border-radius: 3px;
     padding: 2px;
 }
 #tooltip {
-    position: absolute;
-    background-color: white;
-    border: 1px solid black;
-    padding: 5px;
-    z-index: 1000;
+    position: absolute; /* Positioning the tooltip */
+    background-color: white; /* White background */
+    border: 1px solid black; /* Black border */
+    padding: 10px; /* Padding inside the tooltip */
+    z-index: 1000; /* Ensures it's on top of other elements */
+    max-width: 300px; /* Maximum width of the tooltip */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box shadow for a subtle elevation effect */
+    font-size: 14px; /* Font size */
+    line-height: 1.4; /* Line height for readability */
+    text-align: left; /* Left-align text */
+    display: none; /* Initially hidden */
 }
