@@ -90,24 +90,30 @@ function highlightKeywords(keywords) {
     const regex = new RegExp(`(${pattern})`, 'gi');
 
     function shouldHighlight(node) {
-        // Check if the node or its ancestors have any of these classes or tags
-        const excludeClasses = ['CodeHighlight', 'pre', 'highlight'];
-        const excludeTags = ['SCRIPT', 'STYLE', 'PRE', 'BUTTON', 'INPUT', 'TEXTAREA', 'div'];
-
+        const includeTags = ['P', 'CODE', 'SPAN', 'LI', 'TD', 'TH', 'A'];
         let current = node;
         while (current && current !== document.body) {
-            if (excludeTags.includes(current.nodeName)) return false;
-            if (current.classList && excludeClasses.some(cls => current.classList.contains(cls))) return false;
+            if (current.nodeType === Node.ELEMENT_NODE && current.classList.contains('div.highlight')) {
+                console.log('Skipping node due to highlight class:', current);
+                return false;
+            }
+            if (current.nodeName === 'PRE') {
+                console.log('Skipping node inside PRE:', current);
+                return false;
+            }
+            if (includeTags.includes(current.nodeName)) return true;
             current = current.parentElement;
         }
-        return true;
+        return false;
     }
+    
+    
 
     function traverseNode(node) {
         if (node.nodeType === Node.TEXT_NODE) {
             if (shouldHighlight(node) && node.textContent.match(regex)) {
                 const span = document.createElement('span');
-                span.innerHTML = node.textContent.replace(regex, match => `<span class="highlight">${match}</span>`);
+                span.innerHTML = node.textContent.replace(regex, match => `<span class="highlighted">${match}</span>`);
                 node.parentNode.replaceChild(span, node);
             }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
@@ -116,10 +122,6 @@ function highlightKeywords(keywords) {
     }
 
     traverseNode(getMainContent());
-}
-
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function escapeRegExp(string) {
@@ -144,7 +146,7 @@ function getMainContent() {
     }
     
     console.log('No specific content container found, using body');
-    return document.body;
+    return null;
 }
 
 
