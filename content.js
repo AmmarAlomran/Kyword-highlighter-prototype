@@ -106,8 +106,6 @@ function highlightKeywords(keywords) {
         }
         return false;
     }
-    
-    
 
     function traverseNode(node) {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -115,6 +113,16 @@ function highlightKeywords(keywords) {
                 const span = document.createElement('span');
                 span.innerHTML = node.textContent.replace(regex, match => `<span class="highlighted">${match}</span>`);
                 node.parentNode.replaceChild(span, node);
+                // Add click listener to each highlighted word
+                span.querySelectorAll('.highlighted').forEach(word => {
+                    word.addEventListener('click', () => {
+                        const selectedText = word.textContent.trim();
+                        fetchExplanation(selectedText).then(explanation => {
+                            const rect = word.getBoundingClientRect();
+                            showTooltip(explanation, rect.left, rect.bottom);
+                        }).catch(error => console.error('Error fetching explanation:', error));
+                    });
+                });
             }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
             Array.from(node.childNodes).forEach(traverseNode);
@@ -181,8 +189,14 @@ function showTooltip(text, x, y) {
         tooltip.style.position = 'absolute';
         tooltip.style.backgroundColor = 'white';
         tooltip.style.border = '1px solid black';
-        tooltip.style.padding = '5px';
+        tooltip.style.padding = '10px';
         tooltip.style.zIndex = 1000;
+        tooltip.style.maxWidth = '300px';
+        tooltip.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
+        tooltip.style.fontSize = '14px';
+        tooltip.style.lineHeight = '1.4';
+        tooltip.style.textAlign = 'left';
+        tooltip.style.display = 'none';
         document.body.appendChild(tooltip);
     }
     tooltip.style.left = `${x}px`;
