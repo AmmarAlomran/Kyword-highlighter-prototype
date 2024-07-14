@@ -122,6 +122,13 @@ function highlightKeywords(keywords) {
                             showTooltip(explanation, rect.left, rect.bottom);
                         }).catch(error => console.error('Error fetching explanation:', error));
                     });
+                    // Add hover effect with animation
+                    word.addEventListener('mouseenter', () => {
+                        word.classList.add('highlighted-hover');
+                    });
+                    word.addEventListener('mouseleave', () => {
+                        word.classList.remove('highlighted-hover');
+                    });
                 });
             }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
@@ -222,14 +229,6 @@ elementReady('body').then(function (body) {
         }).catch(error => console.error('Error:', error));
     } else {
         console.log('No content element found.');
-    }
-});
-
-document.addEventListener('mouseup', async (event) => {
-    const selectedText = window.getSelection().toString().trim();
-    if (selectedText) {
-        const explanation = await fetchExplanation(selectedText);
-        showTooltip(explanation, event.pageX, event.pageY);
     }
 });
 

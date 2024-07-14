@@ -1,7 +1,13 @@
 .highlighted {
-    background-color: rgba(0, 204, 255, 0.212);
-    border-radius: 3px;
-    padding: 2px;
+    background-color: rgba(0, 81, 255, 0.24); /* Yellow background for highlighted text */
+    border-radius: 3px; /* Rounded corners */
+    padding: 2px; /* Padding around the highlighted text */
+    cursor: pointer; /* Change cursor to pointer on hover */
+    transition: background-color 0.3s ease;
+}
+
+.highlighted:hover {
+    background-color: rgb(0, 81, 255); /* Lighter yellow background on hover */
 }
 #tooltip {
     position: absolute; /* Positioning the tooltip */
