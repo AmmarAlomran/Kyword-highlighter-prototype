@@ -167,26 +167,22 @@ function getMainContent() {
 
 
 async function fetchExplanation(keyword) {
-    try {
-        const response = await fetch('http://127.0.0.1:5000/get_explanation', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ keyword: keyword })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data.explanation;
-    } catch (error) {
-        console.error('Error fetching explanation:', error);
-        return 'Error fetching explanation.';
-    }
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+            { action: 'fetchExplanation', keyword: keyword },
+            response => {
+                if (response && response.explanation) {
+                    console.log('Received explanation:', response.explanation); // Debugging
+                    resolve(response.explanation);
+                } else {
+                    console.error('Explanation fetching failed:', response);
+                    reject('Failed to fetch explanation');
+                }
+            }
+        );
+    });
 }
+
 
 function showTooltip(text, x, y) {
     let tooltip = document.getElementById('tooltip');

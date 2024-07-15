@@ -25,17 +25,6 @@ def fetch_wikipedia_summary(keyword):
     except Exception as e:
         return f"Error fetching summary for {keyword}: {str(e)}"
 
-# # Load pre-trained transformer model for contextual keyword extraction
-# nlp = pipeline('feature-extraction', model='bert-base-uncased', tokenizer='bert-base-uncased')
-
-# def extract_contextual_keywords(text):
-#     # Use KeyBERT with contextual embeddings
-#     kw_model = KeyBERT(model=nlp)
-#     keywords = kw_model.extract_keywords(text, keyphrase_ngram_range=(1, 2), stop_words='english')
-#     return [kw[0] for kw in keywords]
- 
-
-
 # Define keyphrase extraction pipeline
 class KeyphraseExtractionPipeline(TokenClassificationPipeline):
     def __init__(self, model, *args, **kwargs):
