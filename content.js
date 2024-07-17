@@ -36,26 +36,19 @@ function elementReady(getter, opts = {}) {
             if (ret && (!returnMultipleElements || ret.length)) {
                 resolve(ret);
                 clearTimeout(_timeout);
-
-
                 return true;
             }
         };
 
-
         if (computeResolveValue(_getter())) {
             return;
         }
-
 
         if (opts.timeout)
             _timeout = setTimeout(() => {
                 const error = new Error(`elementReady(${getter}) timed out at ${opts.timeout}ms`);
                 reject(error);
             }, opts.timeout);
-
-
-
 
         new MutationObserver((mutationRecords, observer) => {
             const completed = computeResolveValue(_getter(mutationRecords));
@@ -68,6 +61,7 @@ function elementReady(getter, opts = {}) {
         });
     });
 }
+
 function extractKeywordsFromAPI(text) {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
@@ -118,8 +112,7 @@ function highlightKeywords(keywords) {
                     word.addEventListener('click', () => {
                         const selectedText = word.textContent.trim();
                         fetchExplanation(selectedText).then(explanation => {
-                            const rect = word.getBoundingClientRect();
-                            showTooltip(explanation, rect.left, rect.bottom);
+                            showModal(explanation);
                         }).catch(error => console.error('Error fetching explanation:', error));
                     });
                     // Add hover effect with animation
@@ -143,7 +136,6 @@ function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-
 function getMainContent() {
     const contentSelectors = [
         '.main-content',
@@ -161,12 +153,10 @@ function getMainContent() {
     }
     
     console.log('No specific content container found, using body');
-    return null;
+    return document.body;
 }
 
-
-
-async function fetchExplanation(keyword) {
+function fetchExplanation(keyword) {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
             { action: 'fetchExplanation', keyword: keyword },
@@ -183,51 +173,44 @@ async function fetchExplanation(keyword) {
     });
 }
 
-
-function showTooltip(text, x, y) {
-    let tooltip = document.getElementById('tooltip');
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'tooltip';
-        tooltip.style.position = 'absolute';
-        tooltip.style.backgroundColor = 'white';
-        tooltip.style.border = '1px solid black';
-        tooltip.style.padding = '10px';
-        tooltip.style.zIndex = 1000;
-        tooltip.style.maxWidth = '300px';
-        tooltip.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
-        tooltip.style.fontSize = '14px';
-        tooltip.style.lineHeight = '1.4';
-        tooltip.style.textAlign = 'left';
-        tooltip.style.display = 'none';
-        document.body.appendChild(tooltip);
-    }
-    tooltip.style.left = `${x}px`;
-    tooltip.style.top = `${y}px`;
-    tooltip.innerText = text;
-    tooltip.style.display = 'block';
+function showModal(text) {
+    const modal = document.getElementById('explanationModal');
+    const explanationText = document.getElementById('explanationText');
+    explanationText.innerText = text;
+    modal.style.display = 'block';
 }
 
-function hideTooltip() {
-    const tooltip = document.getElementById('tooltip');
-    if (tooltip) {
-        tooltip.style.display = 'none';
+function hideModal() {
+    const modal = document.getElementById('explanationModal');
+    modal.style.display = 'none';
+}
+
+// Ensure the modal close buttons are functional
+elementReady('.close').then((closeButton) => {
+    closeButton.onclick = function() {
+        hideModal();
+    }
+});
+
+window.onclick = function(event) {
+    const modal = document.getElementById('explanationModal');
+    if (event.target == modal) {
+        hideModal();
     }
 }
 
+// Ensure the main functionality runs after the body is ready
 elementReady('body').then(function (body) {
     const contentElement = getMainContent();
-    if (contentElement) {
-        const text = contentElement.innerText;
-        console.log('Extracting keywords from:', text); 
-        extractKeywordsFromAPI(text).then(keywords => {
-            highlightKeywords(keywords);
-        }).catch(error => console.error('Error:', error));
-    } else {
-        console.log('No content element found.');
-    }
+    const text = contentElement.innerText;
+    console.log('Extracting keywords from:', text); 
+    extractKeywordsFromAPI(text).then(keywords => {
+        highlightKeywords(keywords);
+    }).catch(error => console.error('Error:', error));
 });
 
 document.addEventListener('mousedown', () => {
-    hideTooltip();
+    hideModal();
 });
+
+
