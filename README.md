@@ -21,8 +21,8 @@ This Chrome extension highlights keywords on web pages and provides AI-generated
 - pip install -r requirements.txt
 
 - Loading the Extension in Chrome
-    1- Open Chrome and navigate to chrome://extensions/
+    - 1- Open Chrome and navigate to chrome://extensions/
 
-    2- Enable "Developer mode" (toggle switch in the upper right)
+    - 2- Enable "Developer mode" (toggle switch in the upper right)
 
-    3-Click "Load unpacked" and select the extension's directory
+    - 3-Click "Load unpacked" and select the extension's directory
