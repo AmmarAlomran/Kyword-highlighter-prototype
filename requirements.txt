@@ -1,0 +1,6 @@
+Flask==2.3.2
+Flask-Cors==4.0.1
+requests==2.30.0
+transformers @ git+https://github.com/huggingface/transformers@e65502951593a76844e872fee9c56b805598538a
+numpy==1.26.4
+openai==1.35.14
