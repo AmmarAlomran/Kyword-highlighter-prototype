@@ -68,6 +68,8 @@ def get_explanation_route():
         return jsonify({'explanation': explanation})
     else:
         return jsonify({'error': 'No keyword provided'}), 400
+
+
     
 @app.route('/get_explanation', methods=['POST'])
 def get_explanation():
@@ -83,10 +85,8 @@ def get_explanation():
                 {"role": "user", "content": f"Explain the term '{keyword}' in simple terms."}
             ]
         )
-        print(f"API response: {response}")  # Log the API response
 
         explanation = response.choices[0].message.content
-        print(f"Explanation: {explanation}")  # Log the explanation
 
         return jsonify({'explanation': explanation})
     except Exception as e:

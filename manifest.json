@@ -12,5 +12,12 @@
       "js": ["content.js"],
       "css": ["styles.css"]
     }
-  ]
+  ],
+  "web_accessible_resources": [
+  {
+    "resources": ["modal.html"],
+    "matches": ["<all_urls>"]
+  }
+]
+
 }
