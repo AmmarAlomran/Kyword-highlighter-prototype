@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Keyword Highlighter",
   "version": "1.0",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "http://127.0.0.1/*"],
   "background": {
     "service_worker": "background.js"
   },
@@ -14,10 +14,9 @@
     }
   ],
   "web_accessible_resources": [
-  {
-    "resources": ["modal.html"],
-    "matches": ["<all_urls>"]
-  }
-]
-
+    {
+      "resources": ["modal.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
