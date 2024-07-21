@@ -1,37 +1,29 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'extractKeywords') {
-        fetch('http://127.0.0.1:5000/extract_keywords', {
+    const handleFetch = (url, body) => {
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ text: message.text })
+            body: JSON.stringify(body)
         })
         .then(response => response.json())
-        .then(data => {
-            sendResponse({ keywords: data.keywords });
-        })
+        .then(data => sendResponse(data))
         .catch(error => {
-            console.error('Error extracting keywords:', error);
-            sendResponse({ error: 'Failed to extract keywords' });
+            console.error(`Error with ${message.action}:`, error);
+            sendResponse({ error: `Failed to ${message.action}` });
         });
         return true; // Indicate that sendResponse will be called asynchronously
-    } else if (message.action === 'fetchExplanation') {
-        fetch('http://127.0.0.1:5000/get_explanation', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ keyword: message.keyword })
-        })
-        .then(response => response.json())
-        .then(data => {
-            sendResponse({ explanation: data.explanation });
-        })
-        .catch(error => {
-            console.error('Error fetching explanation:', error);
-            sendResponse({ error: 'Failed to fetch explanation' });
-        });
-        return true; // Indicate that sendResponse will be called asynchronously
+    };
+
+    switch (message.action) {
+        case 'extractKeywords':
+            return handleFetch('http://127.0.0.1:5000/extract_keywords', { text: message.text });
+        case 'fetchExplanation':
+            return handleFetch('http://127.0.0.1:5000/get_explanation', { keyword: message.keyword });
+        default:
+            console.error('Unknown action:', message.action);
+            sendResponse({ error: 'Unknown action' });
+            return false;
     }
 });
