@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Keyword Highlighter",
   "version": "1.0",
-  "permissions": ["activeTab", "scripting", "http://127.0.0.1/*"],
+  "permissions": ["activeTab", "scripting"],
   "background": {
     "service_worker": "background.js"
   },

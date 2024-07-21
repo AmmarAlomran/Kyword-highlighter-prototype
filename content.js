@@ -4,63 +4,42 @@ function elementReady(getter, opts = {}) {
             timeout: 0,
             target: document.documentElement
         }, opts);
+
         const returnMultipleElements = getter instanceof Array && getter.length === 1;
-        let _timeout;
-        const _getter = typeof getter === 'function' ?
-            (mutationRecords) => {
-                try {
-                    return getter(mutationRecords);
-                } catch (e) {
-                    return false;
-                }
-            } :
-            () => returnMultipleElements ? document.querySelectorAll(getter[0]) : document.querySelector(getter)
-        ;
-        const computeResolveValue = function (mutationRecords) {
-            const ret = _getter(mutationRecords || {});
-            if (ret && (!returnMultipleElements || ret.length)) {
-                resolve(ret);
-                clearTimeout(_timeout);
+        const _getter = typeof getter === 'function'
+            ? mutationRecords => { try { return getter(mutationRecords); } catch { return false; } }
+            : () => returnMultipleElements ? document.querySelectorAll(getter[0]) : document.querySelector(getter);
+
+        const resolveIfReady = (mutationRecords) => {
+            const result = _getter(mutationRecords || {});
+            if (result && (!returnMultipleElements || result.length)) {
+                resolve(result);
                 return true;
             }
         };
 
-        if (computeResolveValue(_getter())) {
-            return;
+        if (resolveIfReady()) return;
+
+        if (opts.timeout) {
+            setTimeout(() => reject(new Error(`elementReady(${getter}) timed out at ${opts.timeout}ms`)), opts.timeout);
         }
 
-        if (opts.timeout)
-            _timeout = setTimeout(() => {
-                const error = new Error(`elementReady(${getter}) timed out at ${opts.timeout}ms`);
-                reject(error);
-            }, opts.timeout);
-
         new MutationObserver((mutationRecords, observer) => {
-            const completed = computeResolveValue(_getter(mutationRecords));
-            if (completed) {
-                observer.disconnect();
-            }
-        }).observe(opts.target, {
-            childList: true,
-            subtree: true
-        });
+            if (resolveIfReady(mutationRecords)) observer.disconnect();
+        }).observe(opts.target, { childList: true, subtree: true });
     });
 }
 
-function extractKeywordsFromAPI(text) {
+function fetchFromAPI(action, body) {
     return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage(
-            { action: 'extractKeywords', text: text },
-            response => {
-                if (response && response.keywords) {
-                    console.log('Extracted keywords:', response.keywords);
-                    resolve(response.keywords);
-                } else {
-                    console.error('Keyword extraction failed:', response);
-                    reject('Failed to extract keywords');
-                }
+        chrome.runtime.sendMessage({ action, ...body }, response => {
+            if (response && !response.error) {
+                resolve(response);
+            } else {
+                console.error(`${action} failed:`, response);
+                reject(response.error || `Failed to ${action}`);
             }
-        );
+        });
     });
 }
 
@@ -68,98 +47,65 @@ function highlightKeywords(keywords) {
     const pattern = keywords.map(keyword => `\\b${escapeRegExp(keyword.trim())}\\b`).join('|');
     const regex = new RegExp(`(${pattern})`, 'gi');
 
-    function shouldHighlight(node) {
-        const includeTags = ['P', 'CODE', 'SPAN', 'LI', 'TD', 'TH', 'A'];
-        let current = node;
-        while (current && current !== document.body) {
-            if (current.nodeType === Node.ELEMENT_NODE && current.classList.contains('div.highlight')) {
-                console.log('Skipping node due to highlight class:', current);
-                return false;
-            }
-            if (current.nodeName === 'PRE') {
-                console.log('Skipping node inside PRE:', current);
-                return false;
-            }
-            if (includeTags.includes(current.nodeName)) return true;
-            current = current.parentElement;
-        }
-        return false;
-    }
-
-    function traverseNode(node) {
+    function traverseNodes(node) {
         if (node.nodeType === Node.TEXT_NODE) {
             if (shouldHighlight(node) && node.textContent.match(regex)) {
                 const span = document.createElement('span');
                 span.innerHTML = node.textContent.replace(regex, match => `<span class="highlighted">${match}</span>`);
                 node.parentNode.replaceChild(span, node);
                 span.querySelectorAll('.highlighted').forEach(word => {
-                    word.addEventListener('click', () => {
-                        const selectedText = word.textContent.trim();
-                        fetchExplanation(selectedText).then(explanation => {
-                            showModal(explanation);
-                        }).catch(error => console.error('Error fetching explanation:', error));
-                    });
-                    word.addEventListener('mouseenter', () => {
-                        word.classList.add('highlighted-hover');
-                    });
-                    word.addEventListener('mouseleave', () => {
-                        word.classList.remove('highlighted-hover');
-                    });
+                    word.addEventListener('click', () => handleWordClick(word.textContent.trim()));
+                    word.addEventListener('mouseenter', () => word.classList.add('highlighted-hover'));
+                    word.addEventListener('mouseleave', () => word.classList.remove('highlighted-hover'));
                 });
             }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
-            Array.from(node.childNodes).forEach(traverseNode);
+            Array.from(node.childNodes).forEach(traverseNodes);
         }
     }
 
-    traverseNode(getMainContent());
+    traverseNodes(getMainContent());
 }
 
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function getMainContent() {
-    const contentSelectors = [
-        '.main-content',
-        'article',
-        '.post-content',
-        '#content'
-    ];
-    
-    for (let selector of contentSelectors) {
-        const element = document.querySelector(selector);
-        if (element) {
-            console.log('Found content container:', selector);
-            return element;
+function shouldHighlight(node) {
+    const includeTags = ['P', 'CODE', 'SPAN', 'LI', 'TD', 'TH', 'A'];
+    let current = node;
+    while (current && current !== document.body) {
+        if (current.nodeType === Node.ELEMENT_NODE && current.classList.contains('highlight')) {
+            return false;
         }
+        if (current.nodeName === 'PRE') {
+            return false;
+        }
+        if (includeTags.includes(current.nodeName)) return true;
+        current = current.parentElement;
     }
-    
-    console.log('No specific content container found, using body');
+    return false;
+}
+
+function getMainContent() {
+    const contentSelectors = ['.main-content', 'article', '.post-content', '#content'];
+    for (const selector of contentSelectors) {
+        const element = document.querySelector(selector);
+        if (element) return element;
+    }
     return document.body;
 }
 
-function fetchExplanation(keyword) {
-    return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage(
-            { action: 'fetchExplanation', keyword: keyword },
-            response => {
-                if (response && response.explanation) {
-                    console.log('Received explanation:', response.explanation);
-                    resolve(response.explanation);
-                } else {
-                    console.error('Explanation fetching failed:', response);
-                    reject('Failed to fetch explanation');
-                }
-            }
-        );
-    });
+function handleWordClick(keyword) {
+    fetchFromAPI('fetchExplanation', { keyword })
+        .then(response => showModal(response.explanation))
+        .catch(error => console.error('Error fetching explanation:', error));
 }
 
 function createModal() {
     let modal = document.getElementById('explanationModal');
     if (!modal) {
-        fetch(chrome.runtime.getURL('modal.html'))  // Assuming the modal.html is in your Chrome extension's root directory
+        fetch(chrome.runtime.getURL('modal.html'))
             .then(response => response.text())
             .then(html => {
                 const tempDiv = document.createElement('div');
@@ -167,15 +113,14 @@ function createModal() {
                 modal = tempDiv.firstChild;
                 document.body.appendChild(modal);
 
-                modal.querySelector('.close').onclick = function() {
-                    hideModal();
-                };
+                modal.querySelector('.close').onclick = hideModal;
+                window.onclick = event => { if (event.target == modal) hideModal(); };
 
-                window.onclick = function(event) {
-                    if (event.target == modal) {
-                        hideModal();
-                    }
-                };
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.type = 'text/css';
+                link.href = chrome.runtime.getURL('styles.css');
+                document.head.appendChild(link);
             })
             .catch(error => console.error('Error loading modal HTML:', error));
     }
@@ -196,17 +141,14 @@ function hideModal() {
     }
 }
 
-elementReady('body').then(function (body) {
+elementReady('body').then(() => {
     const contentElement = getMainContent();
     if (contentElement) {
         const text = contentElement.innerText;
-        console.log('Extracting keywords from:', text);
-        extractKeywordsFromAPI(text).then(keywords => {
-            highlightKeywords(keywords);
-        }).catch(error => console.error('Error:', error));
+        fetchFromAPI('extractKeywords', { text })
+            .then(response => highlightKeywords(response.keywords))
+            .catch(error => console.error('Error extracting keywords:', error));
     }
 });
 
-document.addEventListener('mousedown', () => {
-    hideModal();
-});
+document.addEventListener('mousedown', hideModal);
