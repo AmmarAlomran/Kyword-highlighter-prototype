@@ -109,13 +109,20 @@ function createModal() {
             .then(response => response.text())
             .then(html => {
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                modal = tempDiv.firstChild;
-                document.body.appendChild(modal);
+                tempDiv.innerHTML = html.trim(); // Trim to remove any unwanted spaces
+                document.body.appendChild(tempDiv.firstChild);
 
-                modal.querySelector('.close').onclick = hideModal;
-                window.onclick = event => { if (event.target == modal) hideModal(); };
+                modal = document.getElementById('explanationModal');
+                modal.querySelector('.close').onclick = function() {
+                    hideModal();
+                };
+                window.onclick = function(event) {
+                    if (event.target == modal) {
+                        hideModal();
+                    }
+                };
 
+                // Insert CSS dynamically
                 const link = document.createElement('link');
                 link.rel = 'stylesheet';
                 link.type = 'text/css';
@@ -129,9 +136,15 @@ function createModal() {
 function showModal(text) {
     createModal();
     const explanationText = document.getElementById('explanationText');
-    explanationText.innerText = text;
-    const modal = document.getElementById('explanationModal');
-    modal.style.display = 'block';
+    if (explanationText) {
+        explanationText.innerText = text;
+        const modal = document.getElementById('explanationModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    } else {
+        console.error('Modal not created properly');
+    }
 }
 
 function hideModal() {
