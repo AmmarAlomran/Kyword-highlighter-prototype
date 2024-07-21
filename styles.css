@@ -9,52 +9,47 @@
 .highlighted:hover {
     background-color: rgb(0, 81, 255); /* Lighter yellow background on hover */
 }
-#tooltip {
-    position: absolute; /* Positioning the tooltip */
-    background-color: white; /* White background */
-    border: 1px solid black; /* Black border */
-    padding: 10px; /* Padding inside the tooltip */
-    z-index: 1000; /* Ensures it's on top of other elements */
-    max-width: 300px; /* Maximum width of the tooltip */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box shadow for a subtle elevation effect */
-    font-size: 14px; /* Font size */
-    line-height: 1.4; /* Line height for readability */
-    text-align: left; /* Left-align text */
-    display: none; /* Initially hidden */
-}
 
-/* Modal styles */
+/* Styles for modal */
 .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
+    display: none; /* Initially hidden */
+    position: fixed; /* Fixed position */
+    z-index: 1000; /* Ensures it's on top of other elements */
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
-    background-color: rgb(0, 0, 0);
-    background-color: rgba(0, 0, 0, 0.4);
+    overflow: auto; /* Enable scrolling if needed */
+    background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent background */
 }
 
 .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
+    background-color: #fefefe; /* White background */
+    margin: 15% auto; /* Centered vertically and horizontally */
+    padding: 20px; /* Padding inside the modal */
+    border: 1px solid #888; /* Light gray border */
+    width: 80%; /* Width of the modal */
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19); /* Subtle shadow for depth */
+    animation: fadeIn 0.4s; /* Fade-in animation */
 }
 
+/* Close button styles */
 .close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
+    color: #aaa; /* Light gray color */
+    float: right; /* Float to the right */
+    font-size: 28px; /* Large font size */
+    font-weight: bold; /* Bold font */
 }
 
 .close:hover,
 .close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
+    color: black; /* Black color on hover/focus */
+    text-decoration: none; /* No underline */
+    cursor: pointer; /* Pointer cursor */
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from {opacity: 0;} 
+    to {opacity: 1;}
 }
