@@ -103,48 +103,62 @@ function handleWordClick(keyword) {
 }
 
 function createModal() {
-    let modal = document.getElementById('explanationModal');
-    if (!modal) {
-        fetch(chrome.runtime.getURL('modal.html'))
-            .then(response => response.text())
-            .then(html => {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html.trim(); // Trim to remove any unwanted spaces
-                document.body.appendChild(tempDiv.firstChild);
+    return new Promise((resolve, reject) => {
+        let modal = document.getElementById('explanationModal');
+        if (!modal) {
+            fetch(chrome.runtime.getURL('modal.html'))
+                .then(response => response.text())
+                .then(html => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html.trim(); // Trim to remove any unwanted spaces
+                    document.body.appendChild(tempDiv.firstChild);
 
-                modal = document.getElementById('explanationModal');
-                modal.querySelector('.close').onclick = function() {
-                    hideModal();
-                };
-                window.onclick = function(event) {
-                    if (event.target == modal) {
-                        hideModal();
+                    modal = document.getElementById('explanationModal');
+                    if (modal) {
+                        modal.querySelector('.close').onclick = function() {
+                            hideModal();
+                        };
+                        window.onclick = function(event) {
+                            if (event.target == modal) {
+                                hideModal();
+                            }
+                        };
+
+                        // Insert CSS dynamically
+                        const link = document.createElement('link');
+                        link.rel = 'stylesheet';
+                        link.type = 'text/css';
+                        link.href = chrome.runtime.getURL('styles.css');
+                        document.head.appendChild(link);
+
+                        resolve(modal);
+                    } else {
+                        reject(new Error('Modal not created properly'));
                     }
-                };
-
-                // Insert CSS dynamically
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.type = 'text/css';
-                link.href = chrome.runtime.getURL('styles.css');
-                document.head.appendChild(link);
-            })
-            .catch(error => console.error('Error loading modal HTML:', error));
-    }
+                })
+                .catch(error => {
+                    console.error('Error loading modal HTML:', error);
+                    reject(error);
+                });
+        } else {
+            resolve(modal);
+        }
+    });
 }
 
 function showModal(text) {
-    createModal();
-    const explanationText = document.getElementById('explanationText');
-    if (explanationText) {
-        explanationText.innerText = text;
-        const modal = document.getElementById('explanationModal');
-        if (modal) {
-            modal.style.display = 'block';
+    createModal().then(() => {
+        const explanationText = document.getElementById('explanationText');
+        if (explanationText) {
+            explanationText.innerText = text;
+            const modal = document.getElementById('explanationModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        } else {
+            console.error('Modal not created properly');
         }
-    } else {
-        console.error('Modal not created properly');
-    }
+    }).catch(error => console.error('Error creating modal:', error));
 }
 
 function hideModal() {
@@ -154,7 +168,28 @@ function hideModal() {
     }
 }
 
+function initializeContentScript() {
+    createModal().then(() => {
+        const contentElement = getMainContent();
+        if (contentElement) {
+            const text = contentElement.innerText;
+            fetchFromAPI('extractKeywords', { text })
+                .then(response => highlightKeywords(response.keywords))
+                .catch(error => console.error('Error extracting keywords:', error));
+        }
+    }).catch(error => console.error('Error initializing content script:', error));
+}
+
+
+function hideModal() {
+    const modal = document.getElementById('explanationModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 elementReady('body').then(() => {
+    initializeContentScript();
     const contentElement = getMainContent();
     if (contentElement) {
         const text = contentElement.innerText;
