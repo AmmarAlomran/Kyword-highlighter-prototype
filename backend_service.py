@@ -1,6 +1,4 @@
 from flask import Flask, request, jsonify
-from keybert import KeyBERT
-from transformers import pipeline
 from flask_cors import CORS
 import requests
 from transformers import (
