@@ -106,15 +106,23 @@ function createModal() {
     return new Promise((resolve, reject) => {
         let modal = document.getElementById('explanationModal');
         if (!modal) {
+            console.log('Creating modal...');
             fetch(chrome.runtime.getURL('modal.html'))
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok.');
+                    }
+                    return response.text();
+                })
                 .then(html => {
+                    console.log('Modal HTML fetched.');
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = html.trim(); // Trim to remove any unwanted spaces
                     document.body.appendChild(tempDiv.firstChild);
 
                     modal = document.getElementById('explanationModal');
                     if (modal) {
+                        console.log('Modal appended to body.');
                         modal.querySelector('.close').onclick = function() {
                             hideModal();
                         };
@@ -133,6 +141,7 @@ function createModal() {
 
                         resolve(modal);
                     } else {
+                        console.error('Modal not found after appending to body.');
                         reject(new Error('Modal not created properly'));
                     }
                 })
@@ -147,16 +156,19 @@ function createModal() {
 }
 
 function showModal(text) {
-    createModal().then(() => {
+    createModal().then(modal => {
         const explanationText = document.getElementById('explanationText');
-        if (explanationText) {
+        const modalTitle = document.getElementById('modalTitle');
+
+        if (explanationText && modalTitle) {
             explanationText.innerText = text;
-            const modal = document.getElementById('explanationModal');
             if (modal) {
                 modal.style.display = 'block';
+            } else {
+                console.error('Modal element is not available to show.');
             }
         } else {
-            console.error('Modal not created properly');
+            console.error('Modal elements not created properly: explanationText:', explanationText, 'modalTitle:', modalTitle);
         }
     }).catch(error => console.error('Error creating modal:', error));
 }
@@ -178,14 +190,6 @@ function initializeContentScript() {
                 .catch(error => console.error('Error extracting keywords:', error));
         }
     }).catch(error => console.error('Error initializing content script:', error));
-}
-
-
-function hideModal() {
-    const modal = document.getElementById('explanationModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
 }
 
 elementReady('body').then(() => {

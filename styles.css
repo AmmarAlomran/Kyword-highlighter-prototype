@@ -1,55 +1,83 @@
 .highlighted {
-    background-color: rgba(0, 81, 255, 0.24); /* Yellow background for highlighted text */
-    border-radius: 3px; /* Rounded corners */
-    padding: 2px; /* Padding around the highlighted text */
-    cursor: pointer; /* Change cursor to pointer on hover */
+    background-color: rgba(0, 81, 255, 0.24);
+    border-radius: 3px;
+    padding: 2px;
+    cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
 .highlighted:hover {
-    background-color: rgb(0, 81, 255); /* Lighter yellow background on hover */
+    background-color: rgb(0, 81, 255);
 }
 
-/* Styles for modal */
 .modal {
-    display: none; /* Initially hidden */
-    position: fixed; /* Fixed position */
-    z-index: 1000; /* Ensures it's on top of other elements */
+    display: none;
+    position: fixed;
+    z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto; /* Enable scrolling if needed */
-    background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent background */
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 .modal-content {
-    background-color: #fefefe; /* White background */
-    margin: 15% auto; /* Centered vertically and horizontally */
-    padding: 20px; /* Padding inside the modal */
-    border: 1px solid #888; /* Light gray border */
-    width: 80%; /* Width of the modal */
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19); /* Subtle shadow for depth */
-    animation: fadeIn 0.4s; /* Fade-in animation */
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    border-radius: 8px;
+    font-family: Arial, sans-serif;
+    animation: fadeIn 0.4s;
 }
 
-/* Close button styles */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+}
+
+.modal-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+}
+
 .close {
-    color: #aaa; /* Light gray color */
-    float: right; /* Float to the right */
-    font-size: 28px; /* Large font size */
-    font-weight: bold; /* Bold font */
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
 }
 
 .close:hover,
 .close:focus {
-    color: black; /* Black color on hover/focus */
-    text-decoration: none; /* No underline */
-    cursor: pointer; /* Pointer cursor */
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-/* Fade-in animation */
+.modal-body {
+    padding: 10px 0;
+}
+
+#explanationText {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+
 @keyframes fadeIn {
-    from {opacity: 0;} 
+    from {opacity: 0;}
     to {opacity: 1;}
 }
