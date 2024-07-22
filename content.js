@@ -54,7 +54,12 @@ function highlightKeywords(keywords) {
                 span.innerHTML = node.textContent.replace(regex, match => `<span class="highlighted">${match}</span>`);
                 node.parentNode.replaceChild(span, node);
                 span.querySelectorAll('.highlighted').forEach(word => {
-                    word.addEventListener('click', () => handleWordClick(word.textContent.trim()));
+                    word.addEventListener('click', event => {
+                        const selectedText = word.textContent.trim();
+                        fetchExplanation(selectedText).then(explanation => {
+                            showModal(explanation, word);
+                        }).catch(error => console.error('Error fetching explanation:', error));
+                    });
                     word.addEventListener('mouseenter', () => word.classList.add('highlighted-hover'));
                     word.addEventListener('mouseleave', () => word.classList.remove('highlighted-hover'));
                 });
@@ -75,7 +80,7 @@ function shouldHighlight(node) {
     const includeTags = ['P', 'CODE', 'SPAN', 'LI', 'TD', 'TH', 'A'];
     let current = node;
     while (current && current !== document.body) {
-        if (current.nodeType === Node.ELEMENT_NODE && current.classList.contains('highlight')) {
+        if (current.nodeType === Node.ELEMENT_NODE && current.classList.contains('div.highlight')) {
             return false;
         }
         if (current.nodeName === 'PRE') {
@@ -96,10 +101,21 @@ function getMainContent() {
     return document.body;
 }
 
-function handleWordClick(keyword) {
-    fetchFromAPI('fetchExplanation', { keyword })
-        .then(response => showModal(response.explanation))
-        .catch(error => console.error('Error fetching explanation:', error));
+function fetchExplanation(keyword) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+            { action: 'fetchExplanation', keyword: keyword },
+            response => {
+                if (response && response.explanation) {
+                    console.log('Received explanation:', response.explanation);
+                    resolve(response.explanation);
+                } else {
+                    console.error('Explanation fetching failed:', response);
+                    reject('Failed to fetch explanation');
+                }
+            }
+        );
+    });
 }
 
 function createModal() {
@@ -126,11 +142,6 @@ function createModal() {
                         modal.querySelector('.close').onclick = function() {
                             hideModal();
                         };
-                        window.onclick = function(event) {
-                            if (event.target == modal) {
-                                hideModal();
-                            }
-                        };
 
                         // Insert CSS dynamically
                         const link = document.createElement('link');
@@ -155,17 +166,21 @@ function createModal() {
     });
 }
 
-function showModal(text) {
+function showModal(text, targetElement) {
     createModal().then(modal => {
         const explanationText = document.getElementById('explanationText');
         const modalTitle = document.getElementById('modalTitle');
 
         if (explanationText && modalTitle) {
             explanationText.innerText = text;
-            if (modal) {
+
+            if (modal && targetElement) {
+                const rect = targetElement.getBoundingClientRect();
+                modal.style.top = `${window.scrollY + rect.bottom + 5}px`;
+                modal.style.left = `${window.scrollX + rect.left}px`;
                 modal.style.display = 'block';
             } else {
-                console.error('Modal element is not available to show.');
+                console.error('Modal element or target element is not available to show.');
             }
         } else {
             console.error('Modal elements not created properly: explanationText:', explanationText, 'modalTitle:', modalTitle);
@@ -192,15 +207,5 @@ function initializeContentScript() {
     }).catch(error => console.error('Error initializing content script:', error));
 }
 
-elementReady('body').then(() => {
-    initializeContentScript();
-    const contentElement = getMainContent();
-    if (contentElement) {
-        const text = contentElement.innerText;
-        fetchFromAPI('extractKeywords', { text })
-            .then(response => highlightKeywords(response.keywords))
-            .catch(error => console.error('Error extracting keywords:', error));
-    }
-});
-
+elementReady('body').then(initializeContentScript);
 document.addEventListener('mousedown', hideModal);
