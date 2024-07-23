@@ -19,8 +19,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.action) {
         case 'extractKeywords':
             return handleFetch('http://127.0.0.1:5000/extract_keywords', { text: message.text });
-        case 'fetchExplanation':
-            return handleFetch('http://127.0.0.1:5000/get_explanation', { keyword: message.keyword });
         default:
             console.error('Unknown action:', message.action);
             sendResponse({ error: 'Unknown action' });

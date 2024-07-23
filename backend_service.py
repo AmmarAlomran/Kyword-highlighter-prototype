@@ -8,7 +8,6 @@ from transformers import (
 )
 from transformers.pipelines import AggregationStrategy
 import numpy as np
-import openai
 
 app = Flask(__name__)
 CORS(app)
@@ -55,41 +54,6 @@ def extract_keywords_route():
         return jsonify({'keywords': keywords})
     else:
         return jsonify({'error': 'No text provided'}), 400
-
-
-@app.route('/get_explanation', methods=['POST'])
-def get_explanation_route():
-    data = request.json
-    keyword = data.get('keyword', '')
-    if keyword:
-        explanation = fetch_wikipedia_summary(keyword)
-        return jsonify({'explanation': explanation})
-    else:
-        return jsonify({'error': 'No keyword provided'}), 400
-
-
-    
-@app.route('/get_explanation', methods=['POST'])
-def get_explanation():
-    data = request.json
-    keyword = data.get('keyword')
-    print(f"Received keyword: {keyword}")  # Log the received keyword
-
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-4",  # or the appropriate model you want to use
-            messages=[
-                {"role": "system", "content": "You are an assistant."},
-                {"role": "user", "content": f"Explain the term '{keyword}' in simple terms."}
-            ]
-        )
-
-        explanation = response.choices[0].message.content
-
-        return jsonify({'explanation': explanation})
-    except Exception as e:
-        print(f"Error: {e}")  # Log the error
-        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

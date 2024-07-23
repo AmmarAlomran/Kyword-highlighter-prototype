@@ -56,12 +56,9 @@ function highlightKeywords(keywords) {
                 span.querySelectorAll('.highlighted').forEach(word => {
                     word.addEventListener('click', event => {
                         const selectedText = word.textContent.trim();
-                        fetchExplanation(selectedText).then(explanation => {
-                            showModal(explanation, word);
-                        }).catch(error => console.error('Error fetching explanation:', error));
+                        showModal('Loading...', word);
+                        fetchExplanation(selectedText).catch(error => console.error('Error fetching explanation:', error));
                     });
-                    word.addEventListener('mouseenter', () => word.classList.add('highlighted-hover'));
-                    word.addEventListener('mouseleave', () => word.classList.remove('highlighted-hover'));
                 });
             }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
@@ -101,6 +98,10 @@ function getMainContent() {
     return document.body;
 }
 
+async function fetchExplanation(keyword) {
+    const explanationText = document.getElementById('explanationText');
+    explanationText.innerText = 'Loading...';
+
 function fetchExplanation(keyword) {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
@@ -113,9 +114,54 @@ function fetchExplanation(keyword) {
                     console.error('Explanation fetching failed:', response);
                     reject('Failed to fetch explanation');
                 }
-            }
-        );
+    const url = 'https://api.openai.com/v1/chat/completions';
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            temperature: 0.6,
+            model: 'gpt-3.5-turbo',
+            messages: [
+                {
+                    role: 'user',
+                    content: `Explain the term '${keyword}' in simple terms.`,
+                },
+            ],
+            max_tokens: 100,
+            stream: true,
+        }),
     });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+            break;
+        }
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(line => line.trim() !== '').map(line => line.replace('data: ', ''));
+        for (const line of lines) {
+            if (line === '[DONE]') {
+                break;
+            }
+            try {
+                const parsed = JSON.parse(line);
+                const content = parsed.choices[0].delta.content;
+                if (content) {
+                    explanationText.innerText = explanationText.innerText.replace('Loading...', '');
+                    explanationText.innerText += content;
+                }
+            } catch (e) {
+                console.error('Error parsing JSON:', e);
+            }
+        }
+    }
 }
 
 function createModal() {
@@ -173,6 +219,7 @@ function showModal(text, targetElement) {
 
         if (explanationText && modalTitle) {
             explanationText.innerText = text;
+            console.log("Modal text set to: ", text);  // Debug log
 
             if (modal && targetElement) {
                 const rect = targetElement.getBoundingClientRect();
